@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -17,7 +18,10 @@ import org.bukkit.util.Vector;
 
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
+import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.EarthAbility;
+import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.BlockSource;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
@@ -25,12 +29,28 @@ import com.projectkorra.projectkorra.util.TempBlock;
 
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.ability.earth.combo.EarthTent;
 
-public class EarthRidge extends EarthAbility implements AddonAbility {
+public class EarthRidge extends EarthAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration;
-	private double sourceRange, range, damage, knockback, knockup, hitRadius;
-	private int minHeight, maxHeight;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.KNOCKBACK)
+	private double knockback;
+	@Attribute(Attribute.KNOCKUP)
+	private double knockup;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
+	private int minHeight;
+	private int maxHeight;
 	
 	private boolean progressing;
 	private BlockFace face;
@@ -44,8 +64,7 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 	
 	public EarthRidge(Player player) {
 		super(player);
-		
-		if (!bPlayer.canBend(this)) {
+		if (!bPlayer.canBendIgnoreBinds(this)) {
 			return;
 		}
 		
@@ -67,6 +86,7 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 		minHeight = Azutoru.az.getConfig().getInt("Abilities.Earth.EarthRidge.MinHeight");
 		maxHeight = Azutoru.az.getConfig().getInt("Abilities.Earth.EarthRidge.MaxHeight");
 		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.EarthRidge.HitRadius");
+
 		
 		applyModifiers();
 		
@@ -106,10 +126,12 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBend(this)) {
+		if (!bPlayer.canBendIgnoreBinds(this)) {
 			removeWithCooldown();
 			return;
 		}
+		
+		
 		
 		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
 			remove();
@@ -188,6 +210,7 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 	
 	public void onClick() {
 		progressing = true;
+		
 	}
 	
 	private void updateLocations(int currentHeight) {
@@ -238,7 +261,23 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 	
 	@Override
 	public String getInstructions() {
-		return "Tap sneak on an earthbendable block to select it as your source. Click to create the moving wall. Hold sneak to change its direction.";
+		return "EarthBlast (Tap Sneak) > RaiseEarth (Right-Click-Block) > Shockwave (Hold Sneak) > Shockwave (Left-Click Source) > Shockwave (Left-Click)";
+	}
+	@Override
+	public Object createNewComboInstance(Player player) {
+		return new EarthRidge(player);
+	}
+	
+
+
+	@Override
+	public ArrayList<AbilityInformation> getCombination() {
+		ArrayList<AbilityInformation> combo = new ArrayList<>();
+		combo.add(new AbilityInformation("EarthBlast", ClickType.SHIFT_UP));
+		combo.add(new AbilityInformation("RaiseEarth", ClickType.RIGHT_CLICK_BLOCK));
+		combo.add(new AbilityInformation("Shockwave", ClickType.SHIFT_DOWN));
+		combo.add(new AbilityInformation("Shockwave", ClickType.LEFT_CLICK));
+		return combo;
 	}
 
 	@Override
@@ -273,5 +312,7 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 	public boolean isEnabled() {
 		return Azutoru.az.getConfig().getBoolean("Abilities.Earth.EarthRidge.Enabled");
 	}
+
+
 
 }

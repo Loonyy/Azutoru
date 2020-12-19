@@ -17,7 +17,10 @@ import org.bukkit.util.Vector;
 
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
+import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.IceAbility;
+import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.BlockSource;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
@@ -26,11 +29,27 @@ import com.projectkorra.projectkorra.util.TempBlock;
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.AzutoruMethods;
 
-public class IceRidge extends IceAbility implements AddonAbility {
+public class IceRidge extends IceAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration, revertTime;
-	private double sourceRange, range, damage, knockback, knockup, hitRadius;
-	private int minHeight, maxHeight;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	private long revertTime;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.KNOCKBACK)
+	private double knockback;
+	@Attribute(Attribute.KNOCKUP)
+	private double knockup;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
+	private int minHeight;
+	private int maxHeight;
 	
 	private boolean progressing;
 	private int counter = 0;
@@ -45,7 +64,7 @@ public class IceRidge extends IceAbility implements AddonAbility {
 	public IceRidge(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBend(this)) {
+		if (!bPlayer.canBendIgnoreBinds(this)) {
 			return;
 		}
 		
@@ -113,7 +132,7 @@ public class IceRidge extends IceAbility implements AddonAbility {
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBend(this)) {
+		if (!bPlayer.canBendIgnoreBinds(this)) {
 			removeWithCooldown();
 			return;
 		}
@@ -201,8 +220,8 @@ public class IceRidge extends IceAbility implements AddonAbility {
 			if (isAir(b.getType())) {
 				TempBlock tb = new TempBlock(b, Material.ICE);
 				tb.setRevertTime(revertTime);
-				addWaterbendableTempBlock(tb);
-				tb.setRevertTask(() -> removeWaterbendableTempBlock(tb));
+				//addWaterbendableTempBlock(tb);
+				//tb.setRevertTask(() -> removeWaterbendableTempBlock(tb)); //TODO
 			}
 		}
 	}
@@ -256,8 +275,22 @@ public class IceRidge extends IceAbility implements AddonAbility {
 	}
 	
 	@Override
+	public Object createNewComboInstance(Player player) {
+		return new IceRidge(player);
+	}
+	
+	@Override
 	public String getInstructions() {
-		return "Tap sneak on an ice, water, or snow block to select a source, then left-click to create an extending wall of ice. Hold sneak to change the direction of the wall.";
+		return "IceSpike (Tap Sneak) > PhaseChange (Hold Sneak) > Surge (Left-Click Source) > Surge (Left-Click)";
+	}
+
+	@Override
+	public ArrayList<AbilityInformation> getCombination() {
+		ArrayList<AbilityInformation> combo = new ArrayList<>();
+		combo.add(new AbilityInformation("IceSpike", ClickType.SHIFT_UP));
+		combo.add(new AbilityInformation("PhaseChange", ClickType.SHIFT_DOWN));
+		combo.add(new AbilityInformation("Surge", ClickType.LEFT_CLICK));
+		return combo;
 	}
 
 	@Override
